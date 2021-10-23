@@ -1,0 +1,537 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title></title>
+<link href="../css/wizards.css?v=20190613141040" rel="stylesheet" type="text/css">
+<link href="../css/overlay-wizards.css?v=20190613141040" rel="stylesheet" type="text/css">
+<style type="text/css">
+.green, .svg-inject.green path, .svg-inject.green circle , .diag-svg-inject.green path, .diag-svg-inject.green circle,.PARCON-svg-inject.green path, .PARCON-svg-inject.green circle
+{ 
+	color:#11aa44;
+	fill:#11aa44!important;
+}
+.red, .svg-inject.red path, .svg-inject.red circle , .diag-svg-inject.red path, .diag-svg-inject.red circle ,.PARCON-svg-inject.red path, .PARCON-svg-inject.red circle
+{ 
+	color:#cc0022;
+	fill:#cc0022;
+}
+
+#workBtn:hover{
+	cursor: pointer;
+}
+#percent {
+  font-size: 43px;
+}
+
+.workBtnCnt
+{
+	margin: 0px auto;
+	display: table-cell;
+	vertical-align: middle;
+	text-align: center;
+	height: 135px;
+	word-break:keep-all;
+	padding: 0px 10px 0px 15px;
+}
+
+.workBtnCntPadding
+{
+	padding: 0px 0px 0px 5px;
+}
+
+.workBtnCntFontSize
+{
+	font-size: 32px !important;
+}
+</style>
+</head>
+<body style="background:#fff url(../images/common_imgs/generic-mobemBG.jpg) no-repeat center top;display:none;">
+<div class="overlay" style="height:100%;"></div>
+<div class="overlaycontainer">
+	<div id = "Troubleshooting" style="display:none;">	
+		<div class="overlaycontent_holder">   
+			<div class="troubleshoot-indicator">
+			<img src="../images/common_imgs/troubleshoot-outline.svg" width="220" height="220px" class="diag-svg-inject">
+			</div>				
+			<div class="troubleshoot-indicator"><img src="../images/common_imgs/troubleshoot-circle.svg" id="circle" width="220" height="220px" class="diag-svg-inject"></div>
+			<div class="troubleshoot-indicator-msg">
+				<!--a href="javascript:void(0)" style="text-decoration: none;" onclick="Work();"-->
+				<div id="workBtn" href="javascript:void(0)" onclick="Work();">
+					<table cellpadding="0" cellspacing="0" align="center">
+						<tr>
+							<td align="center" valign="middle">
+								<svg id="svg" style="display:none;"></svg>
+								<div id="c_lo03" class="dynamic workBtnCnt" name="StartBtn">Click me</div>
+								<div id="percent" style="padding-left:20px;padding-top:10px;color:#fff;display:none;" ></div>
+							</td>
+						</tr>
+					</table>
+				</div>	
+				<!--/a-->	
+			</div>
+			<!--first step-->
+			<div class="troubleshoot-copy" id="message" style="">
+				<img src="../images/common_imgs/error-icon.svg" width="60"><br>
+				<div class="trouble-redmsg dynamic" id="c_lo07">Connection problem</div> 
+				<p class="dynamic" id="c_lo08">We are having trouble connecting you to the internet.<br>There could be a number of different causes.</p>					
+				<p class="dynamic" id="c_lo09">If you click the button above, we will try to fix your problem.</p>
+				<!--div class="trouble-greenmsg" id="diag_in_progress" style="display:none;">Running network troubleshooting:</div>	
+				<div class="trouble-greenmsg" name="diag_in_progress_state" style="display:none;">
+					<table id="ProcSt"><tbody id=""></tbody></table>
+				</div-->
+				</div>
+			<!-- in_progress-->
+		
+
+			<!--complete -->
+			<div class="troubleshoot-copy" id="diag_complete" style="display:none;">
+				<img src="../images/common_imgs/allgood-icon.svg" width="60"><br>
+				<div class="trouble-greenmsg dynamic" id="c_lo10">The problem is fixed.</div>					
+				<p id="c_lo11" class="dynamic" style="display:none;">Enjoy the internet with UPC.</p>
+				<br>
+				<div id="More_Questions" style="display:none;">											
+					<table cellpadding="0" cellspacing="0" align="center" id="MsgTable"></table>
+				</div>
+			</div>
+			<div><input type="button" id="c_50" name="" class="button_main dynamicValue" value="Skip" onclick="Cancel();" onmouseover="$(this).addClass('button_main_hover');" onmouseout="$(this).removeClass('button_main_hover');"></div>
+		</div>
+	</div>
+<div class="logo"></div>
+	<div id="BACK"class="close" style="display:none;"><a href="javascript:void(0)"><img src="../images/common_imgs/close.png" onclick="Back();$('#BACK').hide();"><div class="closetext" onclick="Back();$('#BACK').hide();">Back</div></a></div>
+<div id ="bubblecontent" ></div>
+</div>
+<script language="javascript" src="../js/jquery-1.11.1.min.js"></script>
+<script language="javascript" src="../js/multi_langs.js?v=20190613141040"></script>
+<script language="javascript" src="../js/common_api.js?v=20190613141040"></script>
+<script language="javascript">
+var timerId = 0;
+var ErrorMsgCounter = 1;
+var TroubAjaxGetErr = 0;//1:error
+var CheckState = 0;
+var PingSuccess = 0;
+var TIMEID;	
+var totalStep = 0, ExecTime = 0, prevExecTime = 0;
+var canvasSize = 595.3, centre = canvasSize/2, radius = canvasSize*0.8425/2,  path = "";
+var s, s2, ProgressBarP, ProgressBarP2, PBstartY = centre-radius, PB2startY = centre + radius;
+var percDiv = document.getElementById('percent');
+TroubleShooter = [
+					{ "step":"Connectvalidation", "execTime":10000, "func":Connectvalidation},					
+					{ "step":"WiredCheck"		, "execTime":5000, "func":WiredCheck}
+				];
+$(document).ready(function(){
+	if(GlobalSt["VMFuncEn"] === true){
+		$(".overlay").css({"background":"url('../images/common_imgs/VM-generic-overlayBG.jpg') no-repeat scroll center top / 100% auto #322332", "opacity":"1.0"});	
+	}else if((_OperatorId=="CWC_PAN") || (_OperatorId=="CWC_TRD")){
+		$("body").attr({"style":"background:#fff url(../images/common_imgs/cwc-BG.png) no-repeat center top; display:none"});
+		$(".overlay").remove();
+		$(".content_holder").addClass("content_holder_color");
+	}else{
+		$("body").attr("style","background:#fff url(../images/common_imgs/generic-mobemBG.jpg) no-repeat center top;display:none;");
+	}
+				
+		cbnAjax({
+			url:"../xml/getter.xml", type:"POST", data: {'fun':3}, dataType:"xml",
+			error:function(xmlResponse) {
+				displayErrorMessage();        	
+			},
+			success:function(xmlResponse) {
+				_WebCaPortalTag = $(xmlResponse).find('WebCapPor').text();
+				if(parseInt(_WebCaPortalTag) == 1)
+				{
+					$(".overlay").css({height:"200%"});
+					
+					if(_OperatorId=="ZIGGO")
+					{
+						if(LANGUAGE_ID == "sk")
+							$(".workBtnCnt").addClass("workBtnCntPadding");
+						else if(LANGUAGE_ID == "hu")
+							$(".workBtnCnt").addClass("workBtnCntFontSize");
+					}
+					
+					loadScript("../js/jquery.svginject.js", function()
+					{						
+						$('.diag-svg-inject').svgInject();
+						Troubleshooting_Init();
+					});
+					loadScript("../js/snap.svg-min.js", function(){						
+						setTimeout(function(){						
+							s = Snap('#Layer_2');							
+							ProgressBarP = s.path(path);
+							ProgressBarP2 = s.path(path);
+						}, 1000);
+					});	
+					loadScript("../js/jquery.svg.min.js", function(){	
+						setTimeout(function(){						
+							loadScript("../js/jquery.svganim.min.js", function(){});
+						}, 1000);
+					});
+				}
+				else
+				{
+					window.location.assign("../common_page/login.html");
+				}
+			}
+		});
+	updateContent();
+});
+
+function DiagajaxSet(data){		
+	try {
+		cbnAjax({
+			url: "../xml/setter.xml",
+			type: 'POST',
+			async: false,
+			dataType: "text",			
+			data: data,
+			success: function(response) {
+				_server = {'Alert':0,'Msg':''};
+				if(JSON.stringify(data)!='{"fun":16}')
+				{
+					if(jQuery.trim(response).length > 0){
+						_server = {'Alert':1,'Msg':response};
+					}
+				}
+			},
+			error: function(){
+				displayErrorMessage();
+			}
+		});
+	} 
+	catch (e) {
+		//alert(e.message);
+	}
+}
+
+function Cancel()
+{
+	AllStop();	
+	gotoPagetop();
+	$(".overlay").css({height:"100%"});
+	window.location.assign("../common_page/login.html");
+}	
+
+function DiagAjaxGet(data, func) 
+{
+	cbnAjax({
+		url:"../xml/getter.xml",
+		type:"POST",
+		data: data,
+		dataType:"xml",
+		success:function(xmlResponse) {
+			func(xmlResponse);
+		},
+		error:function(xmlResponse) {
+			TroubAjaxGetErr = 1;
+			//displayErrorMessage();
+		}
+	});
+}
+	
+function run(percent, Start, Speed) {//25% 50% 75%->Start:90, 180, 270
+	var endpoint = percent*360/100;
+	Snap.animate(Start, endpoint,   function (val) {		
+	    var d = val, dr = d-90;
+		percDiv.innerHTML = Math.round(val/360*100) +'%';
+	}, Speed, mina.easeinout);  
+	
+}
+function CompleteMsg(Num, Msg)
+{
+	var MSG="<tr><td align='center' valign='top' class='steps'>"+Num+"</td><td align='left' class='steps-copy dynamic' id="+Msg+"></td></tr>";
+	$(MSG).appendTo("#MsgTable");
+}
+
+function StartCommand(Modem_mode)
+{		
+	var Ping_Interval= 5000;// $('[name="TimeBetweenPings"]').val();				
+	DiagajaxSet({'fun':150,"Type":Modem_mode});
+	clearInterval(timerId);			
+	timerId = setInterval(function(){ajaxGet({'fun':128},'',Ping_Get_data);}, Ping_Interval);
+}
+
+function Ping_Get_data(xmlResponse, node)
+{
+	file = $(xmlResponse).find('file').text();
+	done = $(xmlResponse).find('Pingdone').text();
+	data = $(xmlResponse).find('Pingdata').text();	
+
+	if (done == "1"){
+		if(file.match("Fail"))
+		{
+			TroubAjaxGetErr = 1;
+			PingSuccess = 0;			
+			CompleteMsg(ErrorMsgCounter++, "c_lo22");
+		} 
+		else if(data.match("3 packets transmitted, 3 packets received, 0% packet loss"))
+		{
+			PingSuccess = 1;			
+			CompleteMsg(ErrorMsgCounter++, "c_lo21");
+		}
+		else 
+		{
+			PingSuccess = 0;			
+			TroubAjaxGetErr = 1;		
+			CompleteMsg(ErrorMsgCounter++, "c_lo22");
+		}
+		clearInterval(timerId);
+	}
+}
+
+function Troubleshooting_Init()
+{		
+	var INDEX = 0;
+	prevExecTime = 0;
+	
+	setTimeout(function(){
+		 						
+		$("#Layer_2 > path").attr("fill", "#cc0022");
+		$("#circle").attr("class","diag-svg-inject red");
+		$("#Troubleshooting, #overlay-div").fadeIn(800);
+		$('#overlay-div, [name=StartBtn]').fadeIn(1000);	 
+	}, 1200);
+	AllStop();
+	
+	$.each(TroubleShooter, function(){
+		ExecTime += TroubleShooter[INDEX++].execTime;		
+	});
+	totalStep = TroubleShooter.length;
+}
+function AllStop()
+{
+	
+	ErrorMsgCounter = 1;
+	TroubAjaxGetErr = 0;//1:error
+	CheckState = 0;
+	PingSuccess = 0;
+	prevExecTime = 0;
+	//$('#CircleID').stop();
+	//run(0, 0, 0);
+	//$('[name=StartBtn]').show();
+	$("#percent, #diag_complete").hide();		
+	$("#MsgTable, #percent").empty();	
+}
+function Work()
+{
+	var INDEX = 0;
+	AllStop();
+	$("#workBtn").prop("onclick", null);	
+	$('#workBtn').hover(function() {
+		$(this).css('cursor','default');
+	});
+			
+	$("[name=StartBtn], #diag_complete, #c_lo11, #Layer_2 > path").hide();
+	$("#circle").attr("class","diag-svg-inject");
+	$("#CircleID").attr("fill", "#ffbb1c");
+	$("#message").show();
+	$("#percent").css({"top":"75px","padding-top":"","padding-left":"15px"}).show();
+	
+	var query_dfr = ExecFun;
+	query_dfr(0).pipe(function(){return query_dfr(1);})
+				.pipe(function(){troubleshooter_result();});
+	
+
+}
+
+function ExecFun(step)
+{	
+	var dfrd2 = $.Deferred();
+	ColorAnimateStart();
+	TroubleShooter[step].func();
+	var percentStart = prevExecTime / ExecTime;
+		prevExecTime += TroubleShooter[step].execTime;
+	var percentEnd = (prevExecTime) / ExecTime;	
+	ProgressBar(percentStart, percentEnd, TroubleShooter[step].execTime).done(function(){
+		ColorAnimateStop();
+		dfrd2.resolve();
+	});
+	return dfrd2.promise();	
+}
+		
+function ProgressBar(Start, End, Speed) {
+	var dfrd1 = $.Deferred();
+    var endpoint = End * 360, startpoint = Start * 360;
+    Snap.animate(startpoint, endpoint, function (val) {
+        ProgressBarP.remove();
+		ProgressBarP2.remove();
+        var d = val, dr = d-90;
+			radians = d > 180 ? Math.PI * (90) / 180 : Math.PI * (dr) / 180,
+			radians1 = Math.PI * (dr) / 180,
+			endx = centre + radius * Math.cos(radians),
+			endy = centre + radius * Math.sin(radians),
+			endx1 = centre + radius * Math.cos(radians1),
+			endy1 = centre + radius * Math.sin(radians1),			
+			largeArc = d > 180 ? 1 : 0;  
+			largeArc2 = d < 180 ? 1 : 0;
+			path = "M"+centre+","+PBstartY+" A"+radius+","+radius+" 0 "+largeArc+",1 "+endx+","+endy;
+			path2 = "M"+centre+","+PB2startY+" A"+radius+","+radius+" 0 "+largeArc2+",1 "+endx1+","+endy1;			
+			ProgressBarP = s.path(path);			
+			ProgressBarP.attr({
+				stroke: 'url(#SVGID_1_)',
+				fill: 'none',
+				strokeWidth: 26
+			});
+		
+			if(val > 180)
+			{
+				updateContent();
+				ProgressBarP2 = s.path(path2);
+				ProgressBarP2.attr({
+				stroke: 'url(#SVGID_2_)',
+				fill: 'none',
+				strokeWidth: 26
+	});
+			}
+        percDiv.innerHTML = Math.round(val/360*100) +'%';
+		if(val == endpoint)
+		{
+			dfrd1.resolve();
+		}
+    }, Speed, mina.easeinout);  
+	return dfrd1.promise();	
+}
+
+function ColorAnimateStart()
+{
+	$('#CircleID').animate({ svgFill: '#DB3021' }, ExecTime,function(){});	
+}
+function ColorAnimateStop()
+{
+	$('#CircleID').stop();
+}
+function Connectvalidation()
+{	
+	DiagAjaxGet({'fun':136}, function(xmlResponse)
+	{
+	var CPUTemp = $(xmlResponse).find('Temperature').text();		
+	var CmOperStat = $(xmlResponse).find('OperState').text();	
+	var GWIPv4Addr = $(xmlResponse).find('wan_ipv4_addr').text();	
+	var GWIPv6Addr = $(xmlResponse).find('wan_ipv6_addr').find('wan_ipv6_addr_entry');		
+			
+	if(parseInt(CPUTemp) >= 90)
+		CompleteMsg(ErrorMsgCounter++, "c_lo12");
+	else CompleteMsg(ErrorMsgCounter++, "c_lo13");
+	if(CmOperStat == "OPERATIONAL")
+	{
+		CompleteMsg(ErrorMsgCounter++, "c_lo14");
+		if(parent._GwProvisionMode=="IPv6" && GWIPv6Addr != "")
+		{
+			
+			CompleteMsg(ErrorMsgCounter++, "c_lo15");
+			CheckState = 1;		
+		}
+		else if(parent._GwProvisionMode=="IPv4" && GWIPv4Addr != "")
+		{
+			CheckState = 1;
+			CompleteMsg(ErrorMsgCounter++, "c_lo16");
+			
+		}
+		else if(parent._GwProvisionMode=="IPv4/IPv6" && GWIPv4Addr != "" && GWIPv6Addr != "")
+		{
+			
+			CompleteMsg(ErrorMsgCounter++, "c_lo17");
+			CheckState = 1;
+		}
+		else 
+		{
+			if(parent._GWOperMode=="Disable")			
+					CheckState = 1;//Bridge Mode					
+			else
+			{//Fail
+				if(GWIPv4Addr == "" && (parent._GwProvisionMode=="IPv4" || parent._GwProvisionMode=="IPv6"))				
+					CompleteMsg(ErrorMsgCounter++, "c_lo18");				
+				else if(GWIPv6Addr == "" && (parent._GwProvisionMode=="IPv4" || parent._GwProvisionMode=="IPv6"))
+					CompleteMsg(ErrorMsgCounter++, "c_lo19");		
+				
+				CheckState = 0;
+					TroubAjaxGetErr = 1;
+			}
+		}
+		
+		if(CheckState)		
+		{
+			if(parent._GwProvisionMode == "Disable")
+				StartCommand(2);
+			else if(parent._GwProvisionMode == "IPv6")
+				StartCommand(1);//wait PingSuccess result
+			else StartCommand(0);
+				//DiagajaxSet({'fun':130,"Ping":"ping"});
+		}			
+	}
+	else
+	{
+		CheckState = 0;
+		CompleteMsg(ErrorMsgCounter++, "c_lo20");
+			TroubAjaxGetErr = 1;
+	}
+	
+	});	
+}
+function WiredCheck()
+{	
+	DiagAjaxGet({'fun':143}, function(xmlResponse){	
+	var Speed = 0, WiredState = 0;
+	Device = $(xmlResponse).find("Device").text();	
+		$(xmlResponse).find('Speed').each(function()
+		{
+			Speed = $(this).text();
+			
+			if( Speed >= 1000 )WiredState = 1;
+			else 
+			{
+				WiredState = 0;
+				TroubAjaxGetErr = 1;
+			}
+		});
+		if(WiredState)CompleteMsg(ErrorMsgCounter++, "c_lo23");
+		else  CompleteMsg(ErrorMsgCounter++, "c_lo24");
+	});
+}
+function troubleshooter_result()
+{
+	updateContent();
+	if(TroubAjaxGetErr)
+	{	
+		ProgressBarP.remove();
+		ProgressBarP2.remove();
+		$("#circle").attr("class","diag-svg-inject red");
+		$("#Layer_2 > path").attr("fill", "#cc0022").show();		
+		$("#diag_complete > img").attr("src", "../images/common_imgs/error-icon.svg");
+		$("#diag_complete > .trouble-greenmsg").attr({"class":"trouble-redmsg dynamic", "id":"c_lo25"});
+		$("#More_Questions").show();
+		updateContent();
+	}
+	else
+	{	
+		ProgressBarP.remove();
+		ProgressBarP2.remove();
+		$("#circle").attr("class","diag-svg-inject green");	
+		$("#Layer_2 > path").attr("fill", "#11aa44").show();		
+		$("#c_lo11").show();
+	}
+	$("#message").hide();
+	$("#diag_complete").show();
+}
+
+function loadScript(url, callback){
+    var script = document.createElement("script")
+    script.type = "text/javascript";
+    if (script.readyState){  //IE
+        script.onreadystatechange = function(){
+            if (script.readyState == "loaded" ||
+                    script.readyState == "complete"){
+                script.onreadystatechange = null;
+                callback();
+            }
+        };
+    } else {  //Others
+        script.onload = function(){
+            callback();
+        };
+    }
+    script.src = url;
+    document.getElementsByTagName("head")[0].appendChild(script);
+}
+</script>
+</body>
+</html>
